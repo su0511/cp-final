@@ -1,4 +1,4 @@
-// File: /Users/susan/Desktop/大三/CP/cp final/app/layout.tsx
+// File: /Users/susan/Desktop/cp final/app/layout.tsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
