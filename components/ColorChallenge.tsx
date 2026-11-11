@@ -1,22 +1,114 @@
 "use client";
-import { useState } from 'react';
-import Link from 'next/link';
-import { artifacts } from '@/lib/data';
-import { challenges, matchScore, mixColors } from '@/lib/challenge';
-const btn='border border-black px-3 py-3 text-xs uppercase tracking-wider hover:bg-black hover:text-white disabled:opacity-35 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4';
+
+import { useEffect, useRef, useState } from 'react';
+import { checkRound, createRound, LEVEL_COUNT, selectedColor, toggleArtifact } from '@/lib/color-game';
+import type { ColorRound, RoundResult } from '@/lib/color-game';
+import GameArtifactImage from './GameArtifactImage';
+import GameResult from './GameResult';
+
 export default function ColorChallenge() {
-  const [round,setRound]=useState(0), [ids,setIds]=useState<string[]>([]), [score,setScore]=useState<number|null>(null);
-  const challenge=challenges[round], selected=ids.map(id=>artifacts.find(a=>a.id===id)!), mixed=mixColors(selected.map(a=>a.hex));
-  function toggle(id:string) {if(score!==null)return; setIds(current=>current.includes(id)?current.filter(v=>v!==id):current.length<3?[...current,id]:current);}
-  return <div className="mx-auto max-w-[1600px] px-5 pb-16 pt-8 md:px-10">
-    <div className="grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)]">
-      <aside className="lg:sticky lg:top-6 self-start border border-black/20 bg-[#FCFBF7] p-6 shadow-sm">
-        <div className="mb-6 inline-flex items-center gap-3 bg-black px-4 py-2 text-white" aria-label={`Level ${round + 1} of ${challenges.length}`}><span className="text-xs font-bold tracking-widest">LEVEL</span><span className="text-xl font-bold tabular-nums">{String(round + 1).padStart(2, '0')} <span className="text-sm font-normal text-white/60">/ {String(challenges.length).padStart(2, '0')}</span></span></div>
-        <div className="grid grid-cols-2 gap-2"><div><div className="h-28 transition-colors duration-500" style={{background:challenge.target}}/><p className="mt-2 text-[10px]">TARGET<span className="mt-1 block text-black/50">{challenge.target}</span></p></div><div><div className="h-28 border border-black/10 transition-colors duration-500" style={{background:mixed}}/><p className="mt-2 text-[10px]">YOUR MIX · {ids.length?mixed:'—'}</p></div></div>
-        <p className="mt-5 text-[10px] uppercase tracking-widest">Your ingredients · {ids.length} / 3</p><div className="mt-2 space-y-2">{[0,1,2].map(i=><div key={i} className="flex min-h-10 items-center gap-2 border-b border-black/10 pb-2 text-xs">{selected[i]?<><span className="h-5 w-5 shrink-0 rounded-full border border-black/10" style={{background:selected[i].hex}}/><span className="flex-1">{selected[i].colorName}</span><button disabled={score!==null} onClick={()=>toggle(selected[i].id)} aria-label={`Remove ${selected[i].colorName}`} className="p-2 disabled:opacity-30">×</button></>:<span className="text-black/35">0{i+1} — Choose an object</span>}</div>)}</div>
-        <div aria-live="polite" className="mt-5">{score!==null?<><p className="font-serif text-5xl">{score}<span className="text-lg text-black/40"> / 100</span></p><div className="mt-4 grid grid-cols-2 gap-2"><button className={btn} onClick={()=>{setScore(null);}}>Try again</button><button className={btn} onClick={()=>{setRound((round+1)%challenges.length);setIds([]);setScore(null);}}>{round===challenges.length-1?'Back to challenge 01 ↗':'Next challenge →'}</button></div></>:<><button className={`${btn} w-full bg-black text-white hover:bg-black/80`} disabled={ids.length!==3} onClick={()=>setScore(matchScore(mixed,challenge.target))}>Submit your mix →</button></>}</div>
-      </aside>
-      <section aria-label="Choose your artifacts"><div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">{artifacts.map(art=>{const active=ids.includes(art.id);return <article key={art.id} className={`min-w-0 bg-white border ${active?'border-black ring-2 ring-black ring-offset-2':'border-black/10'}`}><button aria-pressed={active} aria-label={`${active?'Remove':'Select'} ${art.title}, ${art.colorName}`} disabled={score!==null||(!active&&ids.length===3)} onClick={()=>toggle(art.id)} className="group block w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 disabled:cursor-not-allowed"><div className="relative h-36 overflow-hidden bg-[#EEEDE8] sm:h-44"><img src={art.imageUrl} alt={art.title} loading="lazy" className="h-full w-full object-contain p-3 transition-transform group-hover:scale-105" onError={e=>{e.currentTarget.style.visibility='hidden';}}/><span className="absolute bottom-0 left-0 right-0 h-5" style={{background:art.hex}}/>{active&&<span className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black text-white text-xs">{ids.indexOf(art.id)+1}</span>}</div><div className="p-3"><p className="text-xs font-bold">{art.colorName}</p><p className="mt-1 text-[10px] text-black/45">{art.hex}</p><h3 className="mt-2 text-[11px] leading-relaxed">{art.title}</h3><p className="mt-2 text-[9px] text-black/50">{art.culture} · {art.date}</p></div></button><Link href={`/artifact/${art.id}`} className="mx-3 mb-3 inline-block text-[9px] underline underline-offset-4">Object story ↗</Link></article>;})}</div></section>
-    </div>
-  </div>;
+  const [round, setRound] = useState<ColorRound | null>(null);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [result, setResult] = useState<RoundResult | null>(null);
+  const [history, setHistory] = useState<RoundResult[]>([]);
+  const [finished, setFinished] = useState(false);
+  const checkButton = useRef<HTMLButtonElement>(null);
+
+  // Generate only in the browser, keeping server and hydration markup identical.
+  useEffect(() => { setRound(createRound(1)); }, []);
+
+  function restart() {
+    setRound(createRound(1));
+    setSelected([]);
+    setResult(null);
+    setHistory([]);
+    setFinished(false);
+  }
+
+  function advance() {
+    if (!round || !result) return;
+    setHistory(previous => [...previous, result]);
+    setResult(null);
+    if (round.level === LEVEL_COUNT) {
+      setFinished(true);
+    } else {
+      setRound(createRound(round.level + 1));
+      setSelected([]);
+    }
+  }
+
+  const level = round?.level ?? 1;
+  const mixed = round ? selectedColor(round, selected) : '#FFFFFF';
+  const chosen = round?.palette.filter(artifact => selected.includes(artifact.id)) ?? [];
+  const locked = result !== null || finished;
+
+  return (
+    <>
+      <div className="game-board" aria-busy={!round}>
+        <aside className="game-controls" aria-label="Color matching challenge">
+          <div className="game-level">
+            <div className="game-level-label" aria-live="polite">
+              <span>LEVEL <strong>{String(level).padStart(2, '0')}</strong></span>
+              <span className="game-muted">/ {LEVEL_COUNT}</span>
+            </div>
+            <div className="game-progress" role="progressbar" aria-label="Levels completed" aria-valuemin={0} aria-valuemax={LEVEL_COUNT} aria-valuenow={finished ? LEVEL_COUNT : level - 1}>
+              {Array.from({ length: LEVEL_COUNT }, (_, index) => (
+                <span key={index} className={finished || index < level - 1 ? 'is-complete' : index === level - 1 ? 'is-current' : ''} aria-hidden="true" />
+              ))}
+            </div>
+          </div>
+
+          <div className="game-colors">
+            <div className="game-color-group">
+              <h2 className="game-eyebrow">Target color</h2>
+              <div className="game-color-swatch game-target" style={{ backgroundColor: round?.target ?? '#E8E8E0' }} role="img" aria-label={`Target color ${round?.target ?? 'loading'}`} />
+              <span className="game-color-code">{round?.target ?? '—'}</span>
+            </div>
+            <div className="game-color-group">
+              <h2 className="game-eyebrow">Your mix</h2>
+              <div className={`game-color-swatch game-mix ${selected.length ? 'has-color' : ''}`} style={{ backgroundColor: selected.length ? mixed : undefined }} role="img" aria-label={selected.length ? `Your mixed color ${mixed}` : 'No colors selected'}>
+                {!selected.length && <span aria-hidden="true">+</span>}
+              </div>
+              <span className="game-color-code">{selected.length ? mixed : '—'}</span>
+            </div>
+          </div>
+
+          <div className="game-submit-area">
+            <p className="game-selection-count" aria-live="polite" aria-atomic="true"><strong>{selected.length}</strong> / {level} <span>selected</span></p>
+            <div className="game-selected-colors" aria-hidden="true">
+              {Array.from({ length: level }, (_, index) => <span key={index} style={{ backgroundColor: chosen[index]?.hex }} className={chosen[index] ? 'is-filled' : ''} />)}
+            </div>
+            <button ref={checkButton} type="button" className="game-button game-button-primary game-check" disabled={!round || selected.length !== level || locked} onClick={() => { if (round) setResult(checkRound(round, selected)); }}>
+              <span>Check mix</span><span aria-hidden="true">→</span>
+            </button>
+          </div>
+        </aside>
+
+        <section className="game-palette" aria-label="Choose your artifacts">
+          <div className="game-palette-heading"><h2 className="game-eyebrow">The palette</h2></div>
+          <div className="game-artifact-grid">
+            {round ? round.palette.map((artifact, index) => {
+              const active = selected.includes(artifact.id);
+              return (
+                <button key={`${level}-${artifact.id}`} type="button" className={`game-artifact-card ${active ? 'is-selected' : ''}`} aria-pressed={active} aria-label={`${active ? 'Remove' : 'Select'} ${artifact.title}, ${artifact.colorName}`} aria-describedby={`object-info-${artifact.id}`} disabled={locked || (!active && selected.length === level)} onClick={() => setSelected(previous => toggleArtifact(round, previous, artifact.id))}>
+                  <span className="game-card-photo">
+                    <GameArtifactImage artifact={artifact} />
+                    <span className="game-card-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+                    <span className="game-card-check" aria-hidden="true">{active ? '✓' : ''}</span>
+                    <span className="game-card-info" id={`object-info-${artifact.id}`}>
+                      <strong>{artifact.title}</strong><span>{artifact.culture}</span><span>{artifact.date}</span>
+                    </span>
+                  </span>
+                  <span className="game-card-color" style={{ backgroundColor: artifact.hex }} />
+                  <span className="game-card-caption"><span>{artifact.colorName}</span><span>{artifact.hex}</span></span>
+                </button>
+              );
+            }) : Array.from({ length: 16 }, (_, index) => <div key={index} className="game-artifact-placeholder" aria-hidden="true" />)}
+          </div>
+        </section>
+      </div>
+
+      {round && (result || finished) && <GameResult round={round} result={result} history={history} finished={finished} onClose={() => { setResult(null); checkButton.current?.focus(); }} onNext={advance} onRestart={restart} />}
+    </>
+  );
 }

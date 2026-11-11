@@ -8,9 +8,13 @@ function lab(hex: string) {
   const l=Math.cbrt(.4122214708*r+.5363325363*g+.0514459929*b), m=Math.cbrt(.2119034982*r+.6806995451*g+.1073969566*b), s=Math.cbrt(.0883024619*r+.2817188376*g+.6299787005*b);
   return [.2104542553*l+.793617785*m-.0040720468*s,1.9779984951*l-2.428592205*m+.4505937099*s,.0259040371*l+.7827717662*m-.808675766*s];
 }
-export function matchScore(actual: string,target: string) {
+export function colorDistance(actual: string,target: string) {
   const a=lab(actual), b=lab(target);
-  return Math.max(0,Math.min(100,Math.round(100*(1-Math.hypot(...a.map((v,i)=>v-b[i]))/.4))));
+  return Math.hypot(...a.map((v,i)=>v-b[i]));
+}
+export function matchScore(actual: string,target: string, precision = 0) {
+  const factor = 10 ** precision;
+  return Math.round(Math.max(0,Math.min(100,100*(1-colorDistance(actual,target)/.4))) * factor) / factor;
 }
 // Targets are mixed from available objects: every challenge has an exact solution.
 export const challenges = [

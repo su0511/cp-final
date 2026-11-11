@@ -50,15 +50,15 @@ export default function AboutDrawer({ isOpen, onClose, mode = 'free' }: AboutDra
                 <ul className="space-y-4 list-none m-0 p-0">
                   <li className="flex gap-2">
                     <span className="font-bold">01.</span>
-                    <span><span className="font-bold">Discover</span>: {mode === 'challenge' ? 'Explore the objects and their colors.' : 'Drag cards around the desk to explore the collection.'}</span>
+                    <span><span className="font-bold">Discover</span>: {mode === 'challenge' ? 'Explore a new palette of 16 Met objects in each of 15 levels. Hover or focus a card to learn about it.' : 'Drag cards around the desk to explore the collection.'}</span>
                   </li>
                   <li className="flex gap-2">
                     <span className="font-bold">02.</span>
-                    <span><span className="font-bold">Curate</span>: {mode === 'challenge' ? 'Choose three objects to blend their colors and match the target.' : <>Drag your favorites into the <span className="bg-black text-white px-1 text-[10px]">MIX ZONE</span> at the bottom right.</>}</span>
+                    <span><span className="font-bold">Curate</span>: {mode === 'challenge' ? 'Choose one color in level 1, two in level 2, and so on. Click a selected object to remove it. Blend the required number of colors to match the target.' : <>Drag your favorites into the <span className="bg-black text-white px-1 text-[10px]">MIX ZONE</span> at the bottom right.</>}</span>
                   </li>
                   <li className="flex gap-2">
                     <span className="font-bold">03.</span>
-                    <span><span className="font-bold">{mode === 'challenge' ? 'Compare' : 'Analyze'}</span>: {mode === 'challenge' ? 'Submit your mix to see your score. Try again or move to the next target.' : 'Generate your unique "Chrono-Persona" based on your color choices.'}</span>
+                    <span><span className="font-bold">{mode === 'challenge' ? 'Compare' : 'Analyze'}</span>: {mode === 'challenge' ? 'Check your mix to see its color similarity. Reveal an exact answer, retry, or continue to the next level. Complete all 15 to see your final results.' : 'Generate your unique "Chrono-Persona" based on your color choices.'}</span>
                   </li>
                 </ul>
               </section>
