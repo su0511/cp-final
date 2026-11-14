@@ -1656,6 +1656,9 @@ body {
 .game-reveal-button { display: inline-flex; align-items: center; gap: 24px; padding: 10px 0; font-size: 9px; letter-spacing: .1em; text-transform: uppercase; border-bottom: 1px solid #aeb4a1; }
 .game-answer { margin-top: 20px; padding: 16px 0 0; border-top: 1px solid #e0e3d6; }
 .game-answer > h3 { font-size: 8px; color: #7d8273; margin-bottom: 12px; }
+.game-answer-compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; text-align: left; }
+.game-answer-column { min-width: 0; }
+.game-answer-column > h4 { font-size: 8px; color: #7d8273; margin-bottom: 8px; }
 .game-answer-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
 .game-answer-card { min-width: 0; }
 .game-answer-photo { height: 52px; background: #eeefe8; overflow: hidden; }

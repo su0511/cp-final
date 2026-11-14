@@ -8,6 +8,7 @@ import GameArtifactImage from './GameArtifactImage';
 interface GameResultProps {
   round: ColorRound;
   result: RoundResult | null;
+  selectedIds: string[];
   history: RoundResult[];
   finished: boolean;
   onClose: () => void;
@@ -15,10 +16,11 @@ interface GameResultProps {
   onRestart: () => void;
 }
 
-export default function GameResult({ round, result, history, finished, onClose, onNext, onRestart }: GameResultProps) {
+export default function GameResult({ round, result, selectedIds, history, finished, onClose, onNext, onRestart }: GameResultProps) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [revealed, setRevealed] = useState(false);
   const answer = round.palette.filter(artifact => round.answerIds.includes(artifact.id));
+  const playerChoices = selectedIds.map(id => round.palette.find(artifact => artifact.id === id)).filter((artifact): artifact is ColorRound['palette'][number] => Boolean(artifact));
   const average = history.length ? history.reduce((sum, item) => sum + item.similarity, 0) / history.length : 0;
 
   useEffect(() => {
@@ -36,7 +38,6 @@ export default function GameResult({ round, result, history, finished, onClose, 
         <p className="game-eyebrow">The Met Palette</p>
         <h2 id="game-result-title" className="game-result-title">{finished ? 'All 15 levels complete!' : `Level ${String(round.level).padStart(2, '0')} Complete!`}</h2>
         <p className="game-result-score">{(finished ? average : result?.similarity ?? 0).toFixed(1)}<span>%</span></p>
-        {!finished && <p className="game-result-score-label">Color similarity</p>}
 
         {finished ? (
           <>
@@ -53,10 +54,16 @@ export default function GameResult({ round, result, history, finished, onClose, 
               <span className="game-comparison-divider" aria-hidden="true">↔</span>
               <div><span className="game-result-swatch game-result-mix" style={{ backgroundColor: result.mixed }} /><span className="game-eyebrow">Your mix</span><span className="game-color-code">{result.mixed}</span></div>
             </div>
-            <button type="button" className="game-reveal-button" aria-expanded={revealed} aria-controls="game-answer" onClick={() => setRevealed(value => !value)}>{revealed ? 'Hide answer' : 'Reveal answer'} <span aria-hidden="true">{revealed ? '−' : '+'}</span></button>
+            <button type="button" className="game-reveal-button" aria-expanded={revealed} aria-controls="game-answer" onClick={() => setRevealed(value => !value)}>{revealed ? 'Hide' : 'Answer'} <span aria-hidden="true">{revealed ? '−' : '+'}</span></button>
             {revealed && <section id="game-answer" className="game-answer" aria-label="One exact answer">
-              <h3 className="game-eyebrow">One exact answer · {answer.length} {answer.length === 1 ? 'color' : 'colors'}</h3>
-              <div className="game-answer-grid">{answer.map(artifact => <div key={artifact.id} className="game-answer-card" title={`${artifact.title} · ${artifact.colorName}`}><div className="game-answer-photo"><GameArtifactImage artifact={artifact} /></div><span className="game-answer-color" style={{ backgroundColor: artifact.hex }} /><span className="game-answer-name">{artifact.colorName}</span></div>)}</div>
+              <div className="game-answer-compare">
+                {([{ label: 'Your choices', items: playerChoices }, { label: 'Correct answer', items: answer }] as const).map(group => (
+                  <div className="game-answer-column" key={group.label}>
+                    <h4 className="game-eyebrow">{group.label}</h4>
+                    <div className="game-answer-grid">{group.items.map(artifact => <div key={artifact.id} className="game-answer-card" title={`${artifact.title} · ${artifact.colorName}`}><div className="game-answer-photo"><GameArtifactImage artifact={artifact} /></div><span className="game-answer-color" style={{ backgroundColor: artifact.hex }} /><span className="game-answer-name">{artifact.colorName}</span></div>)}</div>
+                  </div>
+                ))}
+              </div>
             </section>}
             <div className="game-result-actions"><button type="button" className="game-button" onClick={onClose}>Try again</button><button type="button" className="game-button game-button-primary" onClick={onNext}>{round.level === LEVEL_COUNT ? 'Finish game' : 'Next level'} <span aria-hidden="true">→</span></button></div>
           </>

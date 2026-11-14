@@ -108,7 +108,7 @@ export default function ColorChallenge() {
         </section>
       </div>
 
-      {round && (result || finished) && <GameResult round={round} result={result} history={history} finished={finished} onClose={() => { setResult(null); checkButton.current?.focus(); }} onNext={advance} onRestart={restart} />}
+      {round && (result || finished) && <GameResult round={round} result={result} selectedIds={selected} history={history} finished={finished} onClose={() => { setResult(null); checkButton.current?.focus(); }} onNext={advance} onRestart={restart} />}
     </>
   );
 }
